@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAPER TRAIL - Log Forensics Challenge</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Panel 1: Mission Brief -->
+        <div class="panel mission-panel">
+            <h1>PAPER TRAIL</h1>
+            <h2 class="subtitle">Log Forensics // Category: HTTP Analysis</h2>
+            
+            <div class="terminal-text" id="mission-text">
+                <span class="typewriter">> SECURITY INCIDENT DETECTED</span>
+                <span class="typewriter">> An attacker breached the server at 2025-03-11 02:14 UTC</span>
+                <span class="typewriter">> They exfiltrated something before we caught them</span>
+                <span class="typewriter">> All we have is the access log</span>
+                <span class="typewriter">> Find what they took</span>
+                <span class="typewriter">> Find the flag they encoded in their own traffic</span>
+            </div>
+
+            <div class="action-area">
+                <a href="/download/access.log" class="btn" download>DOWNLOAD LOG FILE</a>
+                <p class="file-info">50MB — access.log</p>
+            </div>
+        </div>
+
+        <!-- Panel 2: Hints Terminal -->
+        <div class="panel hints-panel">
+            <h1>INTEL // REQUEST A HINT</h1>
+            <p class="warning-text">Each hint costs you pride. Use them wisely.</p>
+            
+            <div class="hint-buttons">
+                <button class="btn hint-btn" data-level="1">HINT 1</button>
+                <button class="btn hint-btn" data-level="2">HINT 2</button>
+                <button class="btn hint-btn" data-level="3">HINT 3</button>
+                <button class="btn hint-btn" data-level="4">HINT 4</button>
+            </div>
+
+            <div class="hint-output" id="hint-output">
+                > Awaiting input...
+            </div>
+        </div>
+
+        <!-- Panel 3: Flag Submission -->
+        <div class="panel flag-panel">
+            <h1>SUBMIT FLAG</h1>
+            
+            <div class="submission-area">
+                <input type="text" id="flag-input" placeholder="TRACECTF{...}" autocomplete="off">
+                <button class="btn" id="submit-btn">SUBMIT</button>
+            </div>
+
+            <div id="submit-response"></div>
+        </div>
+    </div>
+
+    <footer>
+        Recommended tools: grep | strings | CyberChef | Burp Suite | Wireshark<br>
+        Difficulty: HARD // Points: 500 // Category: Log Forensics
+    </footer>
+
+    <script>
+        // Hint logic
+        document.querySelectorAll('.hint-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const level = e.target.dataset.level;
+                const outputArea = document.getElementById('hint-output');
+                
+                outputArea.innerHTML += `> Requesting Intel Level ${level}...<br>`;
+
+                if (level === '1') {
+                    try {
+                        const response = await fetch(`/hint/${level}`);
+                        const headers = [...response.headers.entries()].map(h => `${h[0]}: ${h[1]}`).join('\n');
+                        const data = await response.json();
+                        outputArea.innerHTML += `> RECEIVED (BODY): ${data.hint}<br>`;
+                        outputArea.innerHTML += `> <span class="amber">Notice: Check the response headers too. Not everything is in the body.</span><br>`;
+                        outputArea.innerHTML += `<pre class="raw-headers">${headers}</pre>`;
+                    } catch (err) {
+                        outputArea.innerHTML += '> Error fetching hint.<br>';
+                    }
+                } else if (level === '2') {
+                    window.location.href = '/hint/2';
+                    outputArea.innerHTML += `> A report was downloaded. Read it carefully.<br>`;
+                } else if (level === '3') {
+                    window.open('/hint/3', '_blank');
+                    outputArea.innerHTML += `> A screenshot was found. It may be corrupted.<br>`;
+                    outputArea.innerHTML += `> Try opening it in a text editor.<br>`;
+                } else if (level === '4') {
+                    try {
+                        const response = await fetch(`/hint/${level}`);
+                        const text = await response.text();
+                        outputArea.innerHTML += `> This looks like a tracking script. Read it closely.<br>`;
+                        outputArea.innerHTML += `<pre class="raw-js">${text}</pre>`;
+                    } catch (err) {
+                        outputArea.innerHTML += '> Error fetching hint.<br>';
+                    }
+                }
+                
+                // Scroll to bottom
+                outputArea.scrollTop = outputArea.scrollHeight;
+            });
+        });
+
+        // Submit logic
+        const submitBtn = document.getElementById('submit-btn');
+        const flagInput = document.getElementById('flag-input');
+        const submitResponse = document.getElementById('submit-response');
+        const flagPanel = document.querySelector('.flag-panel');
+
+        submitBtn.addEventListener('click', async () => {
+            const flag = flagInput.value.trim();
+            if(!flag) return;
+
+            submitResponse.innerHTML = '> Validating...';
+            submitResponse.className = '';
+            flagPanel.style.borderColor = 'rgba(0, 255, 136, 0.2)';
+
+            try {
+                const res = await fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ flag })
+                });
+                const data = await res.json();
+
+                if (data.correct) {
+                    flagPanel.style.borderColor = '#00ff88';
+                    flagPanel.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
+                    submitResponse.className = 'success';
+                    submitResponse.innerHTML = '> ' + data.message;
+                } else {
+                    if (data.message.includes('wrong format') || data.message.includes("doesn't look like")) {
+                        submitResponse.className = 'error';
+                    } else {
+                        submitResponse.className = 'amber-text';
+                    }
+                    submitResponse.innerHTML = '> ' + data.message;
+                }
+            } catch (err) {
+                submitResponse.className = 'error';
+                submitResponse.innerHTML = '> Error communicating with server.';
+            }
+        });
+
+        // Simple typewriter effect for the intro text to make it stagger correctly
+        const spans = document.querySelectorAll('.typewriter');
+        spans.forEach((span, i) => {
+            span.style.opacity = '0';
+            setTimeout(() => {
+                span.style.opacity = '1';
+                span.style.animation = 'typing 0.1s linear forwards';
+            }, i * 800 + 400); // 800ms between each line after 400ms delay
+        });
+    </script>
+</body>
+</html>

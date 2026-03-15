@@ -1,0 +1,11 @@
+{
+  "name": "tracectf-paper-trail",
+  "version": "1.0.0",
+  "scripts": {
+    "generate": "node generate-log.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
