@@ -1,8 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// Ensure logs directory exists
-const logsDir = path.join(__dirname, 'logs');
+// Ensure public directory exists
+const logsDir = path.join(__dirname, 'public');
 if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
 }

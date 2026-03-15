@@ -1,20 +1,28 @@
 const express = require('express');
+const serverless = require('serverless-http');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
 
 // In a serverless environment like Netlify, serving a 50MB file directly through 
 // a lambda function isn't ideal because of memory and timeout limits (10s/50MB).
-// The access.log file will instead be generated into the /public folder during 
-// the Netlify build step, so it can be served directly by Netlify's CDN.
+// However, since this is a CTF challenge, we will stream it if possible, or 
+// just redirect to the raw statically generated file to avoid Lambda timeout.
+app.get('/download/access.log', (req, res) => {
+    // Note: Netlify lambda functions have a 6MB response limit usually. 
+    // To serve a 50MB file natively on Netlify without it timing out or failing Lambda limits,
+    // we should redirect the user to download it as a static asset generated during build step!
+    res.setHeader('X-Challenge-Note', 'The truth is in the POST requests.'); // Hint header
+    res.redirect(302, '/access.log'); 
+});
 
 app.get('/hint/:level', (req, res) => {
     const level = req.params.level;
-    console.log(`[HINT] Level ${level} requested from ${req.ip}`);
+    console.log(`[HINT] Level ${level} requested`);
 
     if (level === '1') {
         res.setHeader('X-Investigator-Note', 'grep -c "192.168" access.log');
@@ -106,6 +114,4 @@ app.post('/submit', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`CTF Paper Trail server running on port ${PORT}`);
-});
+module.exports.handler = serverless(app);
