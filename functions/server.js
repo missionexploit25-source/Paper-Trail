@@ -20,7 +20,9 @@ app.get('/download/access.log', (req, res) => {
     res.redirect(302, '/access.log'); 
 });
 
-app.get('/hint/:level', (req, res) => {
+const basePath = '/.netlify/functions/server';
+
+app.get(`${basePath}/hint/:level`, (req, res) => {
     const level = req.params.level;
     console.log(`[HINT] Level ${level} requested`);
 
@@ -90,7 +92,7 @@ if(typeof window!=="undefined"&&window.document){
     res.status(404).send('Hint not found.');
 });
 
-app.post('/submit', (req, res) => {
+app.post(`${basePath}/submit`, (req, res) => {
     const { flag } = req.body;
     
     if (flag === "TRACECTF{l0g_4n4lys1s_3xf1l_d3t3ct3d}") {
